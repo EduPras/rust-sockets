@@ -3,11 +3,11 @@ pub fn ascii2u8(ascii: u8) -> u8 {
 }
 
 #[derive(Debug)]
-pub struct Column {
-    pub col_type: u8, // 0 = integer, 1 = string, 2 = float
-    pub data: Vec<u8>,
-}
 pub struct Item {
-    pub columns: Vec<Column>,
+    pub id: String,
+    pub name: String,
+    pub proteins: f32,
+    pub carbohydrates: f32,
+    pub total_calories: f32,
+    pub total_fats: f32,
 }
-
