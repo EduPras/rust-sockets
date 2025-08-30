@@ -3,11 +3,24 @@ pub fn ascii2u8(ascii: u8) -> u8 {
 }
 
 #[derive(Debug)]
-pub struct Item {
-    pub id: String,
-    pub name: String,
-    pub proteins: f32,
-    pub carbohydrates: f32,
-    pub total_calories: f32,
-    pub total_fats: f32,
+ struct Item {
+    pub id: Option<String>,
+    pub name: Option<String>,
+    pub proteins: Option<f32>,
+    pub carbohydrates: Option<f32>,
+    pub total_calories: Option<f32>,
+    pub total_fats: Option<f32>,
+}
+
+impl Item {
+    fn new(id: String) -> Item {
+        Item {
+            id: Some(id),
+            name: None,
+            proteins: None,
+            carbohydrates: None,
+            total_calories: None,
+            total_fats: None,
+        }
+    }
 }
