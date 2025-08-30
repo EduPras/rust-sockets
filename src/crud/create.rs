@@ -7,26 +7,22 @@ use tracing::{debug, error, info, instrument};
 /// # Arguments
 /// * `data` - `Vec<u8>`:
 ///     The raw bytes representing the item to create
-///     * `number of columns`: 33..34 byte (u8)
+///     * `number of columns`: 1..2 byte (u8)
 ///     (for each column / first column example)
-///         * `column number`: 34..35 bytes (u8)
-///         * `column type`: 35..36 bytes (u8)
-///         * `column data_length`: 36..37 bytes (u8 -> string max 256 chars)
-///         * `column data`: 37..data_length bytes (raw bytes)
-pub fn create_item(data: Vec<u8>) {
-    create_item_impl(data);
-}
+///         * `column number`: 2..3 bytes (u8)
+///         * `column type`: 3..4 bytes (u8)
+///         * `column data_length`: 5..6 bytes (u8 -> string max 256 chars)
+///         * `column data`: 6..data_length bytes (raw bytes)
 
 #[instrument(skip(data), fields(data_str = %String::from_utf8_lossy(&data)))]
-fn create_item_impl(data: Vec<u8>) {
+pub fn create_item(data: Vec<u8>) {
     let mut item = Item {
-        id: String::from_utf8_lossy(&data[1..33]).into(),
         columns: Vec::new(),
     };
-    let n_cols: u8 = ascii2u8(data[33]);
-    info!(item.id, n_cols);
+    let n_cols: u8 = ascii2u8(data[1]);
+    info!(n_cols);
 
-    let mut cursor: usize = 34;
+    let mut cursor: usize = 2;
 
     for _ in 0..n_cols {
         if cursor + 3 > data.len() {
