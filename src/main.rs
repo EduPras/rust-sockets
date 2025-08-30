@@ -1,8 +1,7 @@
-use tracing::{info, span, warn, Level};
 use tracing_subscriber;
 
-mod server;
 pub mod crud;
+mod server;
 pub mod utils;
 
 fn main() -> std::io::Result<()> {

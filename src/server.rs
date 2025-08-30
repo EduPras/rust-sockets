@@ -1,24 +1,131 @@
-use std::io::Read;
-use tracing::{debug, error, info, instrument, span, warn, Level};
-// use std::io::Write;
-use std::net::{TcpListener, TcpStream};
-
 use crate::crud::create::create_item;
+use crate::utils::Item;
+use std::io::{Read, Split};
+use std::net::{TcpListener, TcpStream};
+use std::str::Chars;
+use tracing::{Level, debug, error, info, instrument, span, warn};
 
+#[instrument]
+pub fn listen() -> std::io::Result<u8> {
+    let listener = TcpListener::bind("127.0.0.1:60000")?;
+
+    // accept connections and process them serially
+    match listener.accept() {
+        Ok((stream, _)) => handle_client(stream),
+        Err(e) => error!("Connection failed: {}", e),
+    }
+
+    Ok(200)
+}
+
+fn handle_client(mut stream: TcpStream) {
+    let mut buffer = [0; 1024];
+
+    match stream.read(&mut buffer) {
+        Ok(bytes_read) => {
+            let payload = String::from_utf8_lossy(&buffer[..bytes_read]);
+            println!("Received payload from client: {payload}");
+            handle_operation(payload.as_ref())
+        }
+        Err(e) => println!("Error reading TcpStream: {e}"),
+    }
+}
+
+fn handle_operation(payload: &str) {
+    let content = payload
+        .strip_prefix("^")
+        .expect("Invalid prefix")
+        .strip_suffix("$")
+        .expect("Invalid suffix");
+
+    let mut parts = content.split('|');
+
+    let operation: char = parts
+        .next()
+        .expect("Missing operation")
+        .parse()
+        .expect("Fail to convert operation");
+    let id = extract_id_from(&mut parts);
+
+    match operation {
+        'C' => {
+            let item = create_item_from(id, parts);
+            create_item(item);
+        }
+        'R' => read_item(id),
+        'U' => {
+            let item = create_item_from(id, parts);
+            update_item(item)
+        }
+        'D' => delete_item(id),
+        _ => warn!("===> Unknown operation"),
+    }
+}
+
+fn extract_id_from(parts: &mut std::str::Split<'_, char>) -> String {
+    parts
+        .next()
+        .expect("Missing product hash")
+        .parse()
+        .expect("Fail to convert product_hash")
+}
+
+fn create_item_from(id: String, mut parts: std::str::Split<'_, char>) -> Item {
+    let product_name: String = parts
+        .next()
+        .expect("Missing product name")
+        .parse()
+        .expect("Fail to convert product_name");
+
+    let calories: f32 = parts
+        .next()
+        .expect("Missing calories")
+        .parse()
+        .expect("Fail to convert calories");
+
+    let carbo: f32 = parts
+        .next()
+        .expect("Missing carbo")
+        .parse()
+        .expect("Fail to convert carbo");
+
+    let fat: f32 = parts
+        .next()
+        .expect("Missing fat")
+        .parse()
+        .expect("Fail to convert fat");
+
+    let protein: f32 = parts
+        .next()
+        .expect("Missing protein")
+        .parse()
+        .expect("Fail to convert protein");
+
+    Item {
+        id,
+        name: product_name,
+        proteins: protein,
+        carbohydrates: carbo,
+        total_calories: calories,
+        total_fats: fat,
+    }
+}
+
+// ^C|Suco de Laranja|1000|50|20|5$
 // CRUD logic
 // Read
-fn read_item(data: Vec<u8>) {
+fn read_item(id: String) {
     /*
-    BYTES 
+    BYTES
     id: 0..32 bytes (MD5)
      */
     println!("===> DELETE");
 }
 
 // Update
-fn update_item(data: Vec<u8>) {
+fn update_item(item: Item) {
     /*
-    BYTES 
+    BYTES
     id: 0..32 bytes (MD5)
     number of columns: 32..33 byte (u8)
         (for each column / first column example)
@@ -31,43 +138,10 @@ fn update_item(data: Vec<u8>) {
 }
 
 // delete
-fn delete_item(data: Vec<u8>) {
+fn delete_item(id: String) {
     /*
-    BYTES 
+    BYTES
     id: 0..32 bytes (MD5)
      */
     println!("===> DELETE");
-}
-
-fn handle_client(mut stream: TcpStream) {
-    let mut buffer = [0; 1024];
-    let bytes_read = stream.read(&mut buffer).unwrap();
-    let operation  = String::from_utf8_lossy(&buffer[0..1]);
-    let data = buffer[0..bytes_read].to_vec();
-    info!("Operation called: {} with {} bytes", operation, bytes_read);
-    match operation.as_ref() {
-        "C" => create_item(data),
-        "R" => read_item(data),
-        "U" => update_item(data),
-        "D" => delete_item(data),
-        _ => warn!("===> Unknown operation")
-    };
-    // println!("===> Received request:\n{}", String::from_utf8_lossy(&buffer[..bytes_read]));
-}
-
-#[instrument]
-pub fn listen() -> std::io::Result<u8> {
-    let listener = TcpListener::bind("127.0.0.1:60000")?;
-
-    // accept connections and process them serially
-    for stream in listener.incoming() {
-        match stream {
-            Ok(s) => handle_client(s),
-            Err(e) => {
-                error!("Connection failed: {}", e);
-                continue;
-            }
-        }
-    }
-    Ok(200)
 }
