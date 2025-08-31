@@ -1,6 +1,9 @@
 use rusqlite::{params, Connection, Result};
 use tracing::{error, info};
 use crate::utils::Item;
+/// Inserts an item into the database
+/// # Arguments
+/// - item: `Item`
 pub fn insert(item: Item) -> Result<()> {
     let conn = Connection::open("../database.sqlite3")?;
 
@@ -27,7 +30,9 @@ pub fn insert(item: Item) -> Result<()> {
     info!("insert successfully");
     Ok(())
 }
-
+/// Get a specified item by id
+/// # Arguments
+/// - id: `String`
 pub fn read(id: String) -> Result<Vec<Item>> {
     let conn = Connection::open("../database.sqlite3")?;
     let mut stmt = conn.prepare("SELECT * FROM items")?;
@@ -49,6 +54,9 @@ pub fn read(id: String) -> Result<Vec<Item>> {
     Ok(items)
 }
 
+/// Updates an item from the database
+/// # Arguments
+/// - item: `Item`
 pub fn update(item: Item) -> Result<()> {
     let conn = Connection::open("../database.sqlite3")?;
 
@@ -69,6 +77,9 @@ pub fn update(item: Item) -> Result<()> {
     Ok(())
 }
 
+/// Delete a specified item by id
+/// # Arguments
+/// - id: `String`
 pub fn delete(id: String) -> Result<()> {
     let conn = Connection::open("../database.sqlite3")?;
 
