@@ -1,5 +1,6 @@
 use std::io::{self, Write};
 use std::net::{TcpStream};
+use tracing::{info, };
 
 pub fn start() -> io::Result<()> {
 
@@ -8,7 +9,8 @@ pub fn start() -> io::Result<()> {
     let mut stream = TcpStream::connect("127.0.0.1:60000")?;
 
     stream.write_all(payload.as_bytes())?;
-
+    // let p = payload.as_bytes();
+    // info!(p, payload);
     println!("Client: Message sent. Waiting for a response...");
 
     Ok(())

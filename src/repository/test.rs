@@ -1,8 +1,8 @@
 use rusqlite::{params, Connection, Result};
 use tracing::{error, info, warn};
-use crate::utils::Item; // Assuming Item is in a utils module
+use crate::utils::Item;
 use crate::repository::main::{insert, delete, read, update};
-// Use a constant for the database path to ensure consistency.
+
 const DB_PATH: &str = "database.sqlite3";
 #[cfg(test)]
 mod test {

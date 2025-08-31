@@ -1,4 +1,3 @@
-use crate::crud::create::create_item;
 use crate::utils::Item;
 use std::io::{Read, Split};
 use std::net::{TcpListener, TcpStream};
@@ -50,7 +49,6 @@ fn handle_operation(payload: &str) {
     match operation {
         'C' => {
             let item = create_item_from(id, parts);
-            create_item(item);
         }
         'R' => read_item(id),
         'U' => {
