@@ -4,7 +4,8 @@ use crate::utils::Item;
 pub fn insert(item: Item) -> Result<()> {
     let conn = Connection::open("../database.sqlite3")?;
 
-    match conn.execute(
+    // Create table for first iteration
+    conn.execute(
         "CREATE TABLE IF NOT EXISTS items (
             id    TEXT PRIMARY KEY,
             name  TEXT NOT NULL,
@@ -13,21 +14,17 @@ pub fn insert(item: Item) -> Result<()> {
             total_calories FLOAT,
             total_fats FLOAT
         )",
-        (), // empty list of parameters.
-    ){
-        Ok(_) => info!("created successfully"),
-        Err(err) => error!("created failed: {}", err)
-    };
+        (),
+    )?;
+    info!("table created successfully");
 
-    match conn.execute(
+    conn.execute(
         "INSERT INTO items (id, name, proteins, carbohydrates, total_calories, total_fats) \
         VALUES (?, ?, ?, ?, ?, ?)",
         (&item.id, &item.name, &item.proteins, &item.carbohydrates, &item.total_calories, &item.total_fats),
-    ){
-        Ok(_) => info!("insert successfully"),
-        Err(e) => error!("insert failed: {}", e),
-    };
-    //
+    )?;
+
+    info!("insert successfully");
     Ok(())
 }
 
@@ -55,7 +52,7 @@ pub fn read(id: String) -> Result<Vec<Item>> {
 pub fn update(item: Item) -> Result<()> {
     let conn = Connection::open("../database.sqlite3")?;
 
-    match conn.execute(
+    conn.execute(
         "UPDATE `items`
         SET `name` = ?1, `proteins` = ?2, `carbohydrates` = ?3, `total_calories` = ?4, `total_fats` = ?5
         WHERE `id` = ?6",
@@ -67,23 +64,18 @@ pub fn update(item: Item) -> Result<()> {
             &item.total_fats,
             &item.id,
         ],
-    ){
-        Ok(_) => info!("updated successfully"),
-        Err(e) => error!("updated failed: {}", e),
-    };
-    //
+    )?;
+    info!("updated successfully");
     Ok(())
 }
 
 pub fn delete(id: String) -> Result<()> {
     let conn = Connection::open("../database.sqlite3")?;
 
-    match conn.execute(
+    conn.execute(
         "DELETE FROM `items`
         WHERE `id` = ?", params![&id],
-    ) {
-        Ok(_) => info!("deleted successfully"),
-        Err(e) => error!("delete failed: {}", e)
-    };
+    )?;
+    info!("deleted successfully");
     Ok(())
 }
