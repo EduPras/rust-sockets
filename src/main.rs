@@ -3,9 +3,9 @@ use crate::utils::Item;
 
 mod server;
 mod utils;
-mod repository;
 
 mod client;
+mod repository;
 
 fn main() -> std::io::Result<()> {
     tracing_subscriber::fmt::init();
@@ -18,7 +18,9 @@ fn main() -> std::io::Result<()> {
         total_calories: 133.0,
         total_fats: 133.0
     };
-    let items = repository::read("teste1".to_string()).unwrap();
+
+    let result = repository::insert(&item);
+    let items = repository::read("teste1").unwrap();
     for item in items {
         println!("{:?}", item);
     }
@@ -30,13 +32,13 @@ fn main() -> std::io::Result<()> {
         total_calories: 133.0,
         total_fats: 133.0
     };
-    let result = repository::update(item);
-    let items = repository::read("teste1".to_string()).unwrap();
+    let result = repository::update(&item);
+    let items = repository::read("teste1").unwrap();
     for item in items {
         println!("{:?}", item);
     }
 
-    let result = repository::delete("teste1".to_string());
+    let result = repository::delete("teste1");
 
     client::start()?;
     Ok(())
