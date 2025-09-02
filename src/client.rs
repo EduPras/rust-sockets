@@ -1,16 +1,43 @@
-use std::io::{self, Write};
+use std::io::{self, Read, Write};
 use std::net::TcpStream;
-use tracing::info;
+use tracing::{info, error};
+use md5::{Digest, Md5};
 
 pub fn start() -> io::Result<()> {
-    let payload = build_payload();
-
     let mut stream = TcpStream::connect("127.0.0.1:60000")?;
+    info!("Client: Connected to server.");
 
-    info!("Client: Message sent: {}", payload);
+    loop {
+        let payload = build_payload();
 
-    println!("Client: Message sent. Waiting for a response...");
+        // Exit loop
+        if payload.trim().eq_ignore_ascii_case("exit") {
+            info!("Client: Exiting.");
+            break;
+        }
 
+        stream.write_all(payload.as_bytes())?;
+        stream.flush()?;
+        info!("Client: Message sent: {}", payload.trim());
+
+        // Response
+        let mut buffer = [0; 1024];
+        match stream.read(&mut buffer) {
+            Ok(bytes_read) => {
+                if bytes_read == 0 {
+                    info!("Client: Server closed the connection.");
+                    break;
+                }
+
+                let response = String::from_utf8_lossy(&buffer[..bytes_read]);
+                println!("Server response: {}", response);
+            }
+            Err(e) => {
+                error!("Client: Failed to read from stream: {}", e);
+                break;
+            }
+        }
+    }
     Ok(())
 }
 
@@ -22,9 +49,18 @@ fn build_payload() -> String {
     let protein = read_protein();
     let fats = read_fats();
 
+    let mut hasher = Md5::new();
+    hasher.update(product_name.as_bytes()); // Input data as bytes
+    let hash = hasher.finalize(); // The result is a [u8; 16] array for MD5
+    let mut buffer = [0u8; 32];
+    let encoded_bytes = base16ct::lower::encode(&hash, &mut buffer)
+        .expect("Failed to encode hash as base16");
+    let id = std::str::from_utf8(encoded_bytes)
+        .expect("Encoded bytes were not valid UTF-8");
+
     format!(
-        "^{}|{}|{}|{}|{}|{}$",
-        operation, product_name, calories, carbo, protein, fats
+        "^{}|{}|{}|{}|{}|{}|{}$",
+        operation, id, product_name, calories, carbo, protein, fats
     )
 }
 

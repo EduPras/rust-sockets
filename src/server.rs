@@ -1,36 +1,39 @@
 use crate::utils::Item;
-use std::io::{Read, Split};
+use std::io::{Error, ErrorKind, Read, Write};
 use std::net::{TcpListener, TcpStream};
-use std::str::Chars;
-use tracing::{Level, debug, error, info, instrument, span, warn};
+use tracing::{error, info, instrument, warn};
+
+use crate::repository::insert;
 
 #[instrument]
-pub fn listen() -> std::io::Result<u8> {
-    let listener = TcpListener::bind("127.0.0.1:60000")?;
+pub fn listen(){
+    let listener = TcpListener::bind("127.0.0.1:60000").expect("Failed to bind server");
 
-    // accept connections and process them serially
-    match listener.accept() {
-        Ok((stream, _)) => handle_client(stream),
-        Err(e) => error!("Connection failed: {}", e),
-    }
+    let (stream, _) = listener.accept().expect("Failed to accept connection");
 
-    Ok(200)
+    handle_client(stream);
 }
 
-fn handle_client(mut stream: TcpStream) {
+pub fn send_response(mut stream: TcpStream, status_code: u32){
+    stream.write_all(format!("{}", status_code).as_bytes()).expect("Failed to send response");
+    stream.flush().expect("Failed to flush stream");
+}
+#[instrument]
+fn handle_client(mut stream: TcpStream){
     let mut buffer = [0; 1024];
 
     match stream.read(&mut buffer) {
         Ok(bytes_read) => {
             let payload = String::from_utf8_lossy(&buffer[..bytes_read]);
-            println!("Received payload from client: {payload}");
-            handle_operation(payload.as_ref())
+            info!("Client: Message received: {}", payload);
+            let status_code = handle_operation(payload.as_ref()).expect("Failed to handle operation");
+            send_response(stream, status_code);
         }
-        Err(e) => println!("Error reading TcpStream: {e}"),
+        Err(e) => error!("Client: Error reading from stream: {}", e),
     }
 }
 
-fn handle_operation(payload: &str) {
+fn handle_operation(payload: &str) -> Result<u32,Error> {
     let content = payload
         .strip_prefix("^")
         .expect("Invalid prefix")
@@ -48,15 +51,19 @@ fn handle_operation(payload: &str) {
 
     match operation {
         'C' => {
-            let item = create_item_from(id, parts);
-        }
-        'R' => read_item(id),
-        'U' => {
-            let item = create_item_from(id, parts);
-            update_item(item)
-        }
-        'D' => delete_item(id),
-        _ => warn!("===> Unknown operation"),
+            insert(&create_item_from(id, parts)).expect("Failed to insert item");
+            Ok(200)
+        },
+        // TODO implement R, U and D
+        _ => Err(Error::new(ErrorKind::Other, "Unknown operation")),
+
+        // 'R' => read_item(id),
+        // 'U' => {
+        //     let item = create_item_from(id, parts);
+        //     update_item(item)
+        // }
+        // 'D' => delete_item(id),
+        // _ => warn!("===> Unknown operation"),
     }
 }
 
@@ -107,39 +114,4 @@ fn create_item_from(id: String, mut parts: std::str::Split<'_, char>) -> Item {
         total_calories: calories,
         total_fats: fat,
     }
-}
-
-// ^C|Suco de Laranja|1000|50|20|5$
-// CRUD logic
-// Read
-fn read_item(id: String) {
-    /*
-    BYTES
-    id: 0..32 bytes (MD5)
-     */
-    println!("===> DELETE");
-}
-
-// Update
-fn update_item(item: Item) {
-    /*
-    BYTES
-    id: 0..32 bytes (MD5)
-    number of columns: 32..33 byte (u8)
-        (for each column / first column example)
-        column number: 33..34 bytes (u8)
-        column type: 34..35 bytes (u8)
-        column data_length: 35..36 bytes (u8 -> string max 256 chars)
-        column data: 36..data_length bytes (raw bytes)
-    */
-    println!("===> UPDATE");
-}
-
-// delete
-fn delete_item(id: String) {
-    /*
-    BYTES
-    id: 0..32 bytes (MD5)
-     */
-    println!("===> DELETE");
 }
