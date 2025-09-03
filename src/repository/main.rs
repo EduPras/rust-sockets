@@ -24,7 +24,7 @@ pub fn insert(item: &Item) -> Result<()> {
     )?;
 
     conn.execute(
-        "INSERT INTO items (id, name, proteins, carbohydrates, total_calories, total_fats)
+        "INSERT OR REPLACE INTO items (id, name, proteins, carbohydrates, total_calories, total_fats)
         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
         params![
             &item.id,
