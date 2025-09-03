@@ -7,8 +7,6 @@
 
 ## Como executar
 
-Aqui está um guia super rápido de como executar um projeto Rust usando o Cargo, em formato Markdown:
-
 1. Baixe o [rustup](https://rustup.rs/)
 2. Navegue até a pasta do seu projeto no terminal.
 
