@@ -1,25 +1,15 @@
 <div align="center">
   
   # 🦀 rust-sockets 🧦
+
+
 </div>
 
-[![Rust](https://github.com/EduPras/rust-sockets/actions/workflows/rust.yml/badge.svg?branch=master)](https://github.com/EduPras/rust-sockets/actions/workflows/rust.yml)
+ [![Rust](https://github.com/EduPras/rust-sockets/actions/workflows/rust.yml/badge.svg?branch=master)](https://github.com/EduPras/rust-sockets/actions/workflows/rust.yml)
 
-## Como executar
+Ferramenta para salvar dados de tabelas nutricionais.
 
-1. Baixe o [rustup](https://rustup.rs/)
-2. Navegue até a pasta do seu projeto no terminal.
-
-3. Compile e execute o código em um único comando:
-
-    ```sh
-    cargo run
-    ```
-
-## Banco de dados
-O serviço utiliza o SQLite 3 como DB
-
-## Descrição da Estrutura de Payloads
+# Descrição da estrutura de payloads
 
 - Os payloads são de tamanho variado
 
@@ -34,9 +24,8 @@ O serviço utiliza o SQLite 3 como DB
 - Todos os campos numéricos (Calorias, Carboidratos, Proteína e Gordura) são representados como números de ponto flutuante.
 - Nome do Produto é uma string de texto.
 - ID: Um hash MD5 do nome do produto. Este valor é gerado pelo cliente antes de enviar o payload e funciona como um identificador único para cada produto.
------
 
-### Payload de Requisição
+## Payload de requisição
 
 O payload de requisição é utilizado para enviar comandos ao servidor.
 
@@ -52,12 +41,11 @@ O payload de requisição é utilizado para enviar comandos ao servidor.
   ^Operação|Id$
   ```
 
-**Exemplo de Requisição (Completa)**:
+**Exemplo de requisição (completa)**:
 `^C|123|Barra de Proteína|200|25.3|20|5.2$`
 
------
 
-### Payload de Resposta
+## Payload de Resposta
 
 O payload de resposta é o retorno do servidor após o processamento de uma requisição. Ele informa o resultado da operação e, em alguns casos, os dados solicitados.
 
@@ -83,7 +71,16 @@ O payload de resposta é o retorno do servidor após o processamento de uma requ
 **Exemplo de Resposta (Completa - Read)**:
 `^R|200|123|Barra de Proteína|200|25|20|5$`
 
+# Banco de dados
+O serviço utiliza o SQLite 3 como DB
 
-## Alunos
-- Eduardo Prasniewski
-- Teodoro Colombo
+# Como executar
+
+1. Baixe o [rustup](https://rustup.rs/)
+2. Navegue até a pasta do seu projeto no terminal.
+
+3. Compile e execute o código em um único comando:
+
+    ```sh
+    cargo run
+    ```
