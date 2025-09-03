@@ -16,9 +16,14 @@
     cargo run
     ```
 
+## Banco de dados
+O serviço utiliza o SQLite 3 como DB
+
 ## Descrição da Estrutura de Payloads
 
-Todos os payloads começam com um prefixo `^` e terminam com um sufixo `$`. Os campos são sempre separados por um pipe `|`.
+- Os payloads são de tamanho variado
+
+- Todos os payloads começam com um prefixo `^` e terminam com um sufixo `$`. Os campos são sempre separados por um pipe `|`.
 
 - Operação é um caractere único que define a ação a ser executada:
   - C: Create
