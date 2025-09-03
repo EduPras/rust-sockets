@@ -31,8 +31,9 @@ fn handle_client(mut stream: TcpStream) {
                 }
                 let payload = String::from_utf8_lossy(&buffer[..bytes_read]);
                 info!("Client: Message received: {}", payload);
-                let status_code = handle_operation(payload.as_ref()).expect("Failed to handle operation");
-                send_response(stream.try_clone().unwrap(), status_code);
+                let response_payload =
+                    handle_operation(payload.as_ref()).expect("Failed to handle operation");
+                send_response(stream.try_clone().unwrap(), response_payload);
             }
             Err(ref e) if e.kind() == ErrorKind::Interrupted => continue,
             Err(e) => {
