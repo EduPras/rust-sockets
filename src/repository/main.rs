@@ -1,6 +1,6 @@
-use crate::utils::Item;
 use rusqlite::{Connection, Result, params};
-use tracing::{error, info, warn};
+use tracing::{info, warn};
+use crate::item::Item;
 
 const DB_PATH: &str = "database.sqlite3";
 

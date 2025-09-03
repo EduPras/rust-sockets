@@ -3,12 +3,12 @@ use std::io::Write;
 use tracing_subscriber;
 
 mod server;
-mod utils;
-
 mod client;
 mod repository;
+mod server_response_handler;
+mod item;
 
-fn main() -> std::io::Result<()> {
+fn main() -> io::Result<()> {
     tracing_subscriber::fmt::init();
     match select_mode() {
         'S' => server::listen(),

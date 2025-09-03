@@ -1,10 +1,8 @@
 use md5::{Digest, Md5};
-use std::borrow::Cow;
 use std::io::{self, Read, Write};
 use std::net::TcpStream;
-use rusqlite::params;
 use tracing::{error, info};
-use crate::utils::Item;
+use crate::server_response_handler::handle_server_response;
 
 pub fn start() -> io::Result<()> {
     let mut stream = TcpStream::connect("127.0.0.1:60000")?;
@@ -31,7 +29,6 @@ pub fn start() -> io::Result<()> {
                     info!("Client: Server closed the connection.");
                     break;
                 }
-
                 let response = String::from_utf8_lossy(&buffer[..bytes_read]);
                 println!("Server response: {}", response);
                 handle_server_response(response);
@@ -45,102 +42,6 @@ pub fn start() -> io::Result<()> {
     Ok(())
 }
 
-fn handle_server_response(payload: Cow<str>) {
-    let content = payload
-        .strip_prefix("^")
-        .expect("Invalid prefix")
-        .strip_suffix("$")
-        .expect("Invalid suffix");
-
-    let mut parts = content.split('|');
-
-    let operation: char = parts
-        .next()
-        .expect("Missing operation")
-        .parse()
-        .expect("Fail to convert operation");
-
-    let status_code: u32 = parts
-        .next()
-        .expect("Missing status code")
-        .parse()
-        .expect("Fail to convert status code");
-
-    match operation {
-        'C' | 'U' | 'D' => {
-            if status_code == 200 {
-                println!("Operation {}, succeeded with status code {}",
-                         operation_name(operation), status_code);
-                return;
-            }
-            println!("Operation {}, failed with status code {}",
-                     operation_name(operation), status_code);
-        }
-        'R' => {
-            println!("Operation {}, succeeded with status code {} - Retrieved Item: {:?}",
-                     operation_name(operation), status_code, create_item_from(parts));
-        }
-        _ => {}
-    }
-}
-
-fn create_item_from(mut parts: std::str::Split<'_, char>) -> Item {
-    let id: String = parts
-        .next()
-        .expect("Missing product hash")
-        .parse()
-        .expect("Fail to convert product_hash");
-
-    let product_name: String = parts
-        .next()
-        .expect("Missing product name")
-        .parse()
-        .expect("Fail to convert product_name");
-
-    let calories: f32 = parts
-        .next()
-        .expect("Missing calories")
-        .parse()
-        .expect("Fail to convert calories");
-
-    let carbo: f32 = parts
-        .next()
-        .expect("Missing carbo")
-        .parse()
-        .expect("Fail to convert carbo");
-
-    let fat: f32 = parts
-        .next()
-        .expect("Missing fat")
-        .parse()
-        .expect("Fail to convert fat");
-
-    let protein: f32 = parts
-        .next()
-        .expect("Missing protein")
-        .parse()
-        .expect("Fail to convert protein");
-
-    Item {
-        id,
-        name: product_name,
-        proteins: protein,
-        carbohydrates: carbo,
-        total_calories: calories,
-        total_fats: fat,
-    }
-}
-
-fn operation_name(operation: char) -> String {
-    match operation {
-        'C' => "create",
-        'R' => "read",
-        'U' => "update",
-        'D' => "delete",
-        _ => todo!()
-    }.to_string()
-}
-
 fn build_payload() -> String {
     let operation = read_operation();
     let mut product_name = read_product_name();
@@ -148,10 +49,10 @@ fn build_payload() -> String {
 
     match operation {
         'C' | 'U' => {
-            let calories = read_calories();
-            let carbo = read_carbo();
-            let protein = read_protein();
-            let fats = read_fats();
+            let calories = read_float("calorias");
+            let carbo = read_float("carbo");
+            let protein = read_float("proteina");
+            let fats = read_float("gordura");
             format!(
                 "^{}|{}|{}|{}|{}|{}|{}$",
                 operation, id, product_name, calories, carbo, protein, fats
@@ -166,8 +67,8 @@ fn build_payload() -> String {
 
 fn build_id_from(product_name: &mut String) -> String {
     let mut hasher = Md5::new();
-    hasher.update(product_name.as_bytes()); // Input data as bytes
-    let hash = hasher.finalize(); // The result is a [u8; 16] array for MD5
+    hasher.update(product_name.as_bytes());
+    let hash = hasher.finalize();
     let mut buffer = [0u8; 32];
     let encoded_bytes =
         base16ct::lower::encode(&hash, &mut buffer).expect("Failed to encode hash as base16");
@@ -207,12 +108,10 @@ fn read_operation() -> char {
 
 fn read_product_name() -> String {
     print!("Informe o nome do produto: ");
-    io::stdout().flush().expect("Falha ao flushar stdout");
+    io::stdout().flush().expect("Fail to flush stdout");
 
     let mut input = String::new();
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Falha ao ler a linha.");
+    io::stdin().read_line(&mut input).expect("Fail to read line");
 
     input
         .trim()
@@ -220,68 +119,12 @@ fn read_product_name() -> String {
         .to_string()
 }
 
-fn read_calories() -> f32 {
+fn read_float(prompt: &str) -> f32 {
     loop {
-        print!("Informe as calorias: ");
-        io::stdout().flush().expect("Falha ao flushar stdout");
+        print!("Informe {}: ", prompt);
+        io::stdout().flush().expect("Fail to flush stdout");
         let mut input = String::new();
-        io::stdin()
-            .read_line(&mut input)
-            .expect("Falha ao ler a linha.");
-
-        match input.trim().parse::<f32>() {
-            Ok(value) => return value,
-            Err(_) => {
-                println!("Entrada inválida. Por favor, insira um número.");
-            }
-        }
-    }
-}
-
-fn read_carbo() -> f32 {
-    loop {
-        print!("Informe o carbo: ");
-        io::stdout().flush().expect("Falha ao flushar stdout");
-        let mut input = String::new();
-        io::stdin()
-            .read_line(&mut input)
-            .expect("Falha ao ler a linha.");
-
-        match input.trim().parse::<f32>() {
-            Ok(value) => return value,
-            Err(_) => {
-                println!("Entrada inválida. Por favor, insira um número.");
-            }
-        }
-    }
-}
-
-fn read_protein() -> f32 {
-    loop {
-        print!("Informe a proteina: ");
-        io::stdout().flush().expect("Falha ao flushar stdout");
-        let mut input = String::new();
-        io::stdin()
-            .read_line(&mut input)
-            .expect("Falha ao ler a linha.");
-
-        match input.trim().parse::<f32>() {
-            Ok(value) => return value,
-            Err(_) => {
-                println!("Entrada inválida. Por favor, insira um número.");
-            }
-        }
-    }
-}
-
-fn read_fats() -> f32 {
-    loop {
-        print!("Informe a gordura: ");
-        io::stdout().flush().expect("Falha ao flushar stdout");
-        let mut input = String::new();
-        io::stdin()
-            .read_line(&mut input)
-            .expect("Falha ao ler a linha.");
+        io::stdin().read_line(&mut input).expect("Fail to read line");
 
         match input.trim().parse::<f32>() {
             Ok(value) => return value,

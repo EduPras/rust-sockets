@@ -1,43 +1,40 @@
-use rusqlite::{params, Connection, Result};
-use tracing::{error, info, warn};
-use crate::utils::Item;
-use crate::repository::main::{insert, delete, read, update};
+use crate::repository::main::{delete, insert, read, update};
 
 const DB_PATH: &str = "database.sqlite3";
 #[cfg(test)]
 mod test {
-    use crate::utils::Item;
+    use crate::item::Item;
 
     fn setup() {
         let _ = std::fs::remove_file(super::DB_PATH);
     }
 
     #[test]
-    fn test_basic_crud(){
+    fn test_basic_crud() {
         setup();
 
         // CREATE
         let id = "unit_test_7";
-        let item1 = Item{
+        let item1 = Item {
             id: id.to_string(),
             name: "Suco de banana".to_string(),
             proteins: 100.0,
             carbohydrates: 901.0,
             total_calories: 133.0,
-            total_fats: 133.0
+            total_fats: 133.0,
         };
 
         assert!(super::insert(&item1).is_ok());
         println!("Created OK");
 
         // UPDATE
-        let item2 = Item{
+        let item2 = Item {
             id: id.to_string(),
             name: "Suco de banana com morango".to_string(),
             proteins: 100.0,
             carbohydrates: 10.0, // This is the value we will check.
             total_calories: 133.0,
-            total_fats: 133.0
+            total_fats: 133.0,
         };
 
         assert!(super::update(&item2).is_ok());
