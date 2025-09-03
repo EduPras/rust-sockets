@@ -82,3 +82,8 @@ O payload de resposta é o retorno do servidor após o processamento de uma requ
 
 **Exemplo de Resposta (Completa - Read)**:
 `^R|200|123|Barra de Proteína|200|25|20|5$`
+
+
+## Alunos
+- Eduardo Prasniewski
+- Teodoro Colombo
