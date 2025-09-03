@@ -1,12 +1,11 @@
-use crate::repository::main::{delete, insert, read, update};
-
-const DB_PATH: &str = "database.sqlite3";
 #[cfg(test)]
 mod test {
     use crate::utils::Item;
+    use crate::repository::main::{delete, insert, read, update};
+    const DB_PATH: &str = "database.sqlite3";
 
     fn setup() {
-        let _ = std::fs::remove_file(super::DB_PATH);
+        let _ = std::fs::remove_file(DB_PATH);
     }
 
     #[test]
@@ -24,7 +23,7 @@ mod test {
             total_fats: 133.0,
         };
 
-        assert!(super::insert(&item1).is_ok());
+        assert!(insert(&item1).is_ok());
         println!("Created OK");
 
         // UPDATE
@@ -37,11 +36,11 @@ mod test {
             total_fats: 133.0,
         };
 
-        assert!(super::update(&item2).is_ok());
+        assert!(update(&item2).is_ok());
         println!("Updated OK");
 
         // READ
-        let result = super::read(id);
+        let result = read(id);
         assert!(result.is_ok());
         let items = result.expect("Failed to get items");
 
@@ -52,11 +51,11 @@ mod test {
         println!("Read and verified OK");
 
         // DELETE
-        let result = super::delete(id);
+        let result = delete(id);
         assert!(result.is_ok());
         println!("Deleted OK");
 
-        let final_result = super::read(id);
+        let final_result = read(id);
         assert!(final_result.is_ok());
         assert!(final_result.unwrap().is_empty(), "Item should be deleted");
         println!("Verified delete OK");

@@ -1,4 +1,3 @@
-use md5::{Digest, Md5};
 use std::io::{self, Read, Write};
 use std::net::TcpStream;
 use tracing::{error, info};
