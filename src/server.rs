@@ -3,10 +3,10 @@ use std::io::{Error, ErrorKind, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use tracing::{error, info, instrument, warn};
 
-use crate::repository::insert;
+use crate::repository::{delete, insert, read, update};
 
 #[instrument]
-pub fn listen(){
+pub fn listen() {
     let listener = TcpListener::bind("127.0.0.1:60000").expect("Failed to bind server");
 
     let (stream, _) = listener.accept().expect("Failed to accept connection");
@@ -14,26 +14,40 @@ pub fn listen(){
     handle_client(stream);
 }
 
-pub fn send_response(mut stream: TcpStream, status_code: u32){
-    stream.write_all(format!("{}", status_code).as_bytes()).expect("Failed to send response");
+pub fn send_response(mut stream: TcpStream, response_payload: String) {
+    stream
+        .write_all(response_payload.as_bytes())
+        .expect("Failed to send response");
     stream.flush().expect("Failed to flush stream");
 }
-#[instrument]
-fn handle_client(mut stream: TcpStream){
-    let mut buffer = [0; 1024];
 
-    match stream.read(&mut buffer) {
-        Ok(bytes_read) => {
-            let payload = String::from_utf8_lossy(&buffer[..bytes_read]);
-            info!("Client: Message received: {}", payload);
-            let status_code = handle_operation(payload.as_ref()).expect("Failed to handle operation");
-            send_response(stream, status_code);
+#[instrument]
+fn handle_client(mut stream: TcpStream) {
+    loop {
+        let mut buffer = [0; 1024];
+
+        match stream.read(&mut buffer) {
+            Ok(bytes_read) => {
+                if bytes_read == 0 {
+                    info!("Client disconnected gracefully.");
+                    break;
+                }
+                let payload = String::from_utf8_lossy(&buffer[..bytes_read]);
+                info!("Client: Message received: {}", payload);
+                let status_code =
+                    handle_operation(payload.as_ref()).expect("Failed to handle operation");
+                send_response(stream.try_clone().unwrap(), status_code);
+            }
+            Err(ref e) if e.kind() == ErrorKind::Interrupted => continue,
+            Err(e) => {
+                error!("Client: Error reading from stream: {}", e);
+                break;
+            }
         }
-        Err(e) => error!("Client: Error reading from stream: {}", e),
     }
 }
 
-fn handle_operation(payload: &str) -> Result<u32,Error> {
+fn handle_operation(payload: &str) -> Result<String, Error> {
     let content = payload
         .strip_prefix("^")
         .expect("Invalid prefix")
@@ -49,22 +63,28 @@ fn handle_operation(payload: &str) -> Result<u32,Error> {
         .expect("Fail to convert operation");
     let id = extract_id_from(&mut parts);
 
-    match operation {
+    let (status_code, item) = match operation {
         'C' => {
             insert(&create_item_from(id, parts)).expect("Failed to insert item");
-            Ok(200)
-        },
-        // TODO implement R, U and D
-        _ => Err(Error::new(ErrorKind::Other, "Unknown operation")),
+            (200, None)
+        }
+        'U' => {
+            let item = create_item_from(id, parts);
+            update(&item).expect("Failed to update item");
+            (200, None)
+        }
+        'D' => {
+            let status_code = delete(id.as_str()).expect("Failed to delete item");
+            (status_code, None)
+        }
+        'R' => {
+            let read_item = read(id.as_str()).expect("Failed to read item");
+            (200, read_item.into_iter().next())
+        }
+        _ => return Err(Error::new(ErrorKind::Other, "Unknown operation")),
+    };
 
-        // 'R' => read_item(id),
-        // 'U' => {
-        //     let item = create_item_from(id, parts);
-        //     update_item(item)
-        // }
-        // 'D' => delete_item(id),
-        // _ => warn!("===> Unknown operation"),
-    }
+    Ok(build_response_payload(operation, status_code, item))
 }
 
 fn extract_id_from(parts: &mut std::str::Split<'_, char>) -> String {
@@ -113,5 +133,16 @@ fn create_item_from(id: String, mut parts: std::str::Split<'_, char>) -> Item {
         carbohydrates: carbo,
         total_calories: calories,
         total_fats: fat,
+    }
+}
+
+fn build_response_payload(operation: char, status_code: u32, item: Option<Item>) -> String {
+    match item {
+        Some(item) => format!(
+            "^{}|{}|{}|{}|{}|{}|{}|{}$",
+            operation, status_code, item.id, item.name, item.total_calories, item.carbohydrates,
+            item.proteins, item.total_fats
+        ),
+        None => format!("^{}|{}$", operation, status_code)
     }
 }

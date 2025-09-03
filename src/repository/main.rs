@@ -1,7 +1,6 @@
-
-use rusqlite::{params, Connection, Result};
-use tracing::{error, info, warn};
 use crate::utils::Item;
+use rusqlite::{Connection, Result, params};
+use tracing::{error, info, warn};
 
 const DB_PATH: &str = "database.sqlite3";
 
@@ -27,7 +26,14 @@ pub fn insert(item: &Item) -> Result<()> {
     conn.execute(
         "INSERT INTO items (id, name, proteins, carbohydrates, total_calories, total_fats)
         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        params![&item.id, &item.name, &item.proteins, &item.carbohydrates, &item.total_calories, &item.total_fats],
+        params![
+            &item.id,
+            &item.name,
+            &item.proteins,
+            &item.carbohydrates,
+            &item.total_calories,
+            &item.total_fats
+        ],
     )?;
 
     info!("Successfully inserted item with id: {}", item.id);
@@ -49,7 +55,7 @@ pub fn read(id: &str) -> Result<Vec<Item>> {
             proteins: row.get(2)?,
             carbohydrates: row.get(3)?,
             total_calories: row.get(4)?,
-            total_fats: row.get(5)?
+            total_fats: row.get(5)?,
         })
     })?;
 
@@ -63,7 +69,7 @@ pub fn read(id: &str) -> Result<Vec<Item>> {
 /// Updates an item in the database. Takes a reference.
 /// # Arguments
 /// - item: `&Item`
-pub fn update(item: &Item) -> Result<()> {
+pub fn update(item: &Item) -> Result<u32> {
     let conn = Connection::open(DB_PATH)?;
 
     let rows_affected = conn.execute(
@@ -82,29 +88,24 @@ pub fn update(item: &Item) -> Result<()> {
 
     if rows_affected == 0 {
         warn!("Update did not affect any rows for item id: {}", item.id);
-    } else {
-        info!("Successfully updated item id: {}", item.id);
+        return Ok(404);
     }
-
-    Ok(())
+    info!("Successfully updated item id: {}", item.id);
+    Ok(200)
 }
 
 /// Deletes a specified item by id.
 /// # Arguments
 /// - id: `&str`
-pub fn delete(id: &str) -> Result<()> {
+pub fn delete(id: &str) -> Result<u32> {
     let conn = Connection::open(DB_PATH)?;
 
-    let rows_affected = conn.execute(
-        "DELETE FROM items WHERE `id` = ?1",
-        params![id],
-    )?;
+    let rows_affected = conn.execute("DELETE FROM items WHERE `id` = ?1", params![id])?;
 
     if rows_affected == 0 {
         warn!("Delete did not affect any rows for item id: {}", id);
-    } else {
-        info!("Successfully deleted item with id: {}", id);
+        return Ok(404);
     }
-
-    Ok(())
+    info!("Successfully deleted item with id: {}", id);
+    Ok(200)
 }
