@@ -33,8 +33,13 @@ pub fn handle_server_response(payload: Cow<str>) {
                      operation_name(operation), status_code);
         }
         'R' => {
-            println!("Operation {} succeeded with status code {} - Retrieved: {:?}",
-                     operation_name(operation), status_code, create_item_from(parts));
+            if status_code == 200 {
+                println!("Operation {} succeeded with status code {} - Retrieved: {:?}",
+                         operation_name(operation), status_code, create_item_from(parts));
+                return;
+            }
+            println!("Operation {} failed with status code {}",
+                     operation_name(operation), status_code);
         }
         _ => {}
     }

@@ -1,8 +1,8 @@
+use crate::item::Item;
+use crate::repository::{delete, insert, read, update};
 use std::io::{Error, ErrorKind, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use tracing::{error, info, instrument, warn};
-use crate::item::Item;
-use crate::repository::{delete, insert, read, update};
 
 #[instrument]
 pub fn listen() {
@@ -78,7 +78,11 @@ fn handle_operation(payload: &str) -> Result<String, Error> {
         }
         'R' => {
             let read_item = read(id.as_str()).expect("Failed to read item");
-            (200, read_item.into_iter().next())
+            if let Some(item) = read_item.into_iter().next() {
+                (200, Some(item))
+            } else {
+                (404, None)
+            }
         }
         _ => return Err(Error::new(ErrorKind::Other, "Unknown operation")),
     };
@@ -139,9 +143,15 @@ fn build_response_payload(operation: char, status_code: u32, item: Option<Item>)
     match item {
         Some(item) => format!(
             "^{}|{}|{}|{}|{}|{}|{}|{}$",
-            operation, status_code, item.id, item.name, item.total_calories, item.carbohydrates,
-            item.proteins, item.total_fats
+            operation,
+            status_code,
+            item.id,
+            item.name,
+            item.total_calories,
+            item.carbohydrates,
+            item.proteins,
+            item.total_fats
         ),
-        None => format!("^{}|{}$", operation, status_code)
+        None => format!("^{}|{}$", operation, status_code),
     }
 }
