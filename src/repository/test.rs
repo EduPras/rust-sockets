@@ -3,7 +3,7 @@ use crate::repository::main::{delete, insert, read, update};
 const DB_PATH: &str = "database.sqlite3";
 #[cfg(test)]
 mod test {
-    use crate::item::Item;
+    use crate::utils::Item;
 
     fn setup() {
         let _ = std::fs::remove_file(super::DB_PATH);

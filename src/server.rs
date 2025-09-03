@@ -1,5 +1,7 @@
-use crate::item::Item;
 use crate::repository::{delete, insert, read, update};
+use crate::payload;
+use crate::utils::{get_item_from_string, get_id};
+
 use std::io::{Error, ErrorKind, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use tracing::{error, info, instrument, warn};
@@ -58,15 +60,15 @@ fn handle_operation(payload: &str) -> Result<String, Error> {
         .expect("Missing operation")
         .parse()
         .expect("Fail to convert operation");
-    let id = extract_id_from(&mut parts);
+    let id = get_id(&mut parts);
 
     let (status_code, item) = match operation {
         'C' => {
-            insert(&create_item_from(id, parts)).expect("Failed to insert item");
+            insert(&get_item_from_string(id, parts)).expect("Failed to insert item");
             (200, None)
         }
         'U' => {
-            let item = create_item_from(id, parts);
+            let item = get_item_from_string(id, parts);
             let status_code = update(&item).expect("Failed to update item");
             (status_code, None)
         }
@@ -85,71 +87,5 @@ fn handle_operation(payload: &str) -> Result<String, Error> {
         _ => return Err(Error::new(ErrorKind::Other, "Unknown operation")),
     };
 
-    Ok(build_response_payload(operation, status_code, item))
-}
-
-fn extract_id_from(parts: &mut std::str::Split<'_, char>) -> String {
-    parts
-        .next()
-        .expect("Missing product hash")
-        .parse()
-        .expect("Fail to convert product_hash")
-}
-
-fn create_item_from(id: String, mut parts: std::str::Split<'_, char>) -> Item {
-    let product_name: String = parts
-        .next()
-        .expect("Missing product name")
-        .parse()
-        .expect("Fail to convert product_name");
-
-    let calories: f32 = parts
-        .next()
-        .expect("Missing calories")
-        .parse()
-        .expect("Fail to convert calories");
-
-    let carbo: f32 = parts
-        .next()
-        .expect("Missing carbo")
-        .parse()
-        .expect("Fail to convert carbo");
-
-    let fat: f32 = parts
-        .next()
-        .expect("Missing fat")
-        .parse()
-        .expect("Fail to convert fat");
-
-    let protein: f32 = parts
-        .next()
-        .expect("Missing protein")
-        .parse()
-        .expect("Fail to convert protein");
-
-    Item {
-        id,
-        name: product_name,
-        proteins: protein,
-        carbohydrates: carbo,
-        total_calories: calories,
-        total_fats: fat,
-    }
-}
-
-fn build_response_payload(operation: char, status_code: u32, item: Option<Item>) -> String {
-    match item {
-        Some(item) => format!(
-            "^{}|{}|{}|{}|{}|{}|{}|{}$",
-            operation,
-            status_code,
-            item.id,
-            item.name,
-            item.total_calories,
-            item.carbohydrates,
-            item.proteins,
-            item.total_fats
-        ),
-        None => format!("^{}|{}$", operation, status_code),
-    }
+    Ok(payload::response(operation, status_code, item))
 }

@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use crate::item::Item;
+use crate::utils::Item;
 
 pub fn handle_server_response(payload: Cow<str>) {
     let content = payload
