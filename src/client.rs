@@ -3,7 +3,6 @@ use std::io::{self, Read, Write};
 use std::net::TcpStream;
 use tracing::{error, info};
 use crate::server_response_handler::handle_server_response;
-
 pub fn start() -> io::Result<()> {
     let mut stream = TcpStream::connect("127.0.0.1:60000")?;
     info!("Client: Connected to server.");

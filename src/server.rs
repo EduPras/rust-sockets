@@ -7,9 +7,7 @@ use tracing::{error, info, instrument, warn};
 #[instrument]
 pub fn listen() {
     let listener = TcpListener::bind("127.0.0.1:60000").expect("Failed to bind server");
-
     let (stream, _) = listener.accept().expect("Failed to accept connection");
-
     handle_client(stream);
 }
 
@@ -33,8 +31,7 @@ fn handle_client(mut stream: TcpStream) {
                 }
                 let payload = String::from_utf8_lossy(&buffer[..bytes_read]);
                 info!("Client: Message received: {}", payload);
-                let status_code =
-                    handle_operation(payload.as_ref()).expect("Failed to handle operation");
+                let status_code = handle_operation(payload.as_ref()).expect("Failed to handle operation");
                 send_response(stream.try_clone().unwrap(), status_code);
             }
             Err(ref e) if e.kind() == ErrorKind::Interrupted => continue,
@@ -69,8 +66,8 @@ fn handle_operation(payload: &str) -> Result<String, Error> {
         }
         'U' => {
             let item = create_item_from(id, parts);
-            update(&item).expect("Failed to update item");
-            (200, None)
+            let status_code = update(&item).expect("Failed to update item");
+            (status_code, None)
         }
         'D' => {
             let status_code = delete(id.as_str()).expect("Failed to delete item");
